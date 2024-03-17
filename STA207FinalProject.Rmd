@@ -396,12 +396,3 @@ kable(leveneTest(Mean~factor(g1thighdegree),data=teacher_summary))
 
 Conclusion:
 The STAR project was an effective randomized experiment. However, it suffer from a lack of repeatebility and unreported values. The model based with mean scaled math score under each teacher as response and class size, school ID,and teacher's highest education level as predictor is a model that satisfy all model assumptions. Based on this model fitted in part 6, there is a significant difference in scaled math score in first grade across the different class sizes after difference in school and education level of the teacher is taken into account. The class size associated with highest scaled math score in first grade is small(13 to 17 students per teacher). Teacher's highest education level does not have a significant effect on mean scaled math score of a class in first grade.
-
-Office hour notes:
-Reformate the report, hide the code and raw output. Put codes together and puut written report into paragraphs. Have only written report. Change the size of the plot and have mutiple plot on same row, use kable function for tables and statistic summary. 
-Evaluate peaks in the student count vs number of teacher plot. For school id main effect plot, rearrange school id by location and color them
-For model diagnostic, evaluate each plot and remove irralvent plots and change lable to signify why each plot is important. 
-Expand on the caviat of initial analysis report.Address at least one caviat. In this case, include teacher's education level as covariate in the new model. Mention missing data here and say using Harverd dataset improve the issue.
-In descriptive analysis, provid brief summary for the dataset and variables of interest.
-for part 7, consider fitting the model with missing value replaced by predicted math score instead of ignoring them.
-For investgating miss data, conpare them with class size, ethnicity, location... and compare these with nonmissing data to see weather any pattern exist. For predicting missing values, use a full model instead of the model with only g2mathess. 
