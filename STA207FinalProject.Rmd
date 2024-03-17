@@ -5,7 +5,7 @@ output:
   pdf_document: default
 date: "2024-02-27"
 ---
-
+by Zixuan Wu
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -25,9 +25,10 @@ The dataset used in this analysis is from the Tennessee's Student Teacher Achiev
 
 The STAR project randomly assigned over 7000 students from 79 schools into classes of three different sizes:small(13 to 17 students per teacher), regular class (22 to 25 students per teacher), and regular-with-aide class (22 to 25 students with a full-time teacher's aide). The project also randomly assign teacher to each class and record student's acedamic performance. The experiment is a controlled randomized experiment as it assign the treatment(class size) randomly to the participants(Teacher and students), This experiment's design ensure that two factors that affect a class's overall acedimic performance, teacher and students, are assigned randomly to different class size in order to minimize their effects as confounding factors. However, this experiment lack the capacity to be properly repeated as the students participated in the experiment will move on in their education and cannot repeat the experiment. The experiment may have issue regarding missing data. Among the 75 schools included in this experiment, 4 schools only contain two type of class instead of three. Many students also has missing scaled math scores in first grade. We will investgate possible association between these missing data and mean scaled math score of the school and math scaled score of individual students.
 
-3.In the initial analysis, the reason behind my choice between mean and median was not properly explored. When performing hypothesis test on class size and school ID, I also utilized error for balanced two way ANOVA model instead of the proper inbalance two-way ANOVA model. Two possible flaw of the initial analysis's design was that it used a dataset that contained missing information and the two way ANOVA used for evaluating the effect of class size on mean scaled math score may be influenced by covarites outside the model. To address the problem of missing data, we will first use the Harverd dataset which is more complete, and we will fit a model with other datas present in the dataset to predict the unreported math scores and use the prediction to evaluate the effect these missing variables may hoave on the model. For issue relating to covarites, the new model fitted in this final report will include the highest education level a teacher recieved as a response variable and we will test weather the effect of class size is still significant with this new variable taken into account.
+3.In the initial analysis, the reason behind my choice between mean and median was not properly explored. When performing hypothesis test on class size and school ID, I also utilized error for balanced two way ANOVA model instead of the proper inbalance two-way ANOVA model. Two possible flaw of the initial analysis's design was that it used a dataset that contained missing information and the two way ANOVA used for evaluating the effect of class size on mean scaled math score may be influenced by covarites outside the model. To address the problem of missing data, we will first use the Harverd dataset which is more complete, and we will fit a model with other datas present in the dataset to predict the unreported math scores and use the prediction to evaluate the effect these missing variables may hoave on the model. For issue relating to covarites, the new model fitted in this final report will include the highest education level a teacher recieved as response variable and we will test weather the effect of class size is still significant with this new variables taken into account.
 ```{r, echo = FALSE}
 library("haven")  
+library(knitr)
 S = read_sav("Downloads/STAR_Students.sav")
 #S$g1surban
 ```
@@ -40,7 +41,7 @@ S$g1surban = as.factor(S$g1surban)
 final_df = S[!is.na(S$g1tmathss), ]
 final_df$g1classtype = as.factor(final_df$g1classtype)
 na_df = S[is.na(S$g1tmathss), ]
-max(final_df$g1tmathss)
+#max(final_df$g1tmathss)
 ```
 
 5.Descriptive Analysis:
@@ -73,7 +74,7 @@ Lastly, we will investgate the effect of school ID and location of school on mea
 library(dplyr)
 #teacher_summary = summarise
 teacher_summary = final_df %>%
-  group_by(g1tchid, g1classtype, g1schid,g1thighdegree) %>%
+  group_by(g1tchid, g1classtype, g1schid,g1thighdegree,g1surban) %>%
   summarise(
     Min = min(g1tmathss),
     Mean = mean(g1tmathss),
@@ -126,8 +127,8 @@ upper_bound = Q3 + 1.5 * IQR
 
 # Identify potential outlier
 outliers <- teacher_summary[teacher_summary$Mean < lower_bound | teacher_summary$Mean > upper_bound, ]
-knitr::kable(head(outliers[, c(1,2,3,4,6)]), "simple")
 print("Potential outliers:")
+knitr::kable(head(outliers[, c(1,2,3,4,6)]), "simple")
 #print(outliers)
 ```
 
@@ -136,7 +137,7 @@ print("Potential outliers:")
 The table below list summary for each descriptive statistic:
 ```{r, echo = FALSE}
 selected_vars = teacher_summary[, c("Min", "Mean", "StdDev", "Q1", "Median", "Q3", "Max", "Student_Count")]
-summary(selected_vars)
+kable(summary(selected_vars))
 ```
 
 ```{r, echo = FALSE}
@@ -254,7 +255,7 @@ $Y_{ijk}$ is the mean scaled math score under a teacher, $\mu$ is the population
 Model Assumptions: We assume that $\sum_{i=1}^{3}\alpha_{i}$ = 0,$\sum_{k=1}^{3}c_{k}$ = 0, and $\sum_{i=1}^{76}\beta_{i}$ = 0. We also assume that the residuals of the model are independent, follow a normal distribution, and the variance of residuals are equal.
 We do not include the interaction term between class type and school ID in order to reduce the number of unknown parameter to estimate. However, it is possible that the interaction term may be significant.
 
-This model is approiate for the task of evaluating weather there is a difference between scaled math score across different class size because it use mean scaled math score under a teacher as a response and include class type as a response. If there exist difference in mean scaled math score between the three class size, the mean effects of class size in this model should be significantly different from 0. It also account for the effect of teacher's experience on mean scaled math score by including the highest education level of each teacher as predictor in the model.
+This model is approiate for the task of evaluating weather there is a difference between scaled math score across different class size because it use mean scaled math score under a teacher as a response and include class type as a response. If there exist difference in mean scaled math score between the three class size, the mean effects of class size in this model should be significantly different from 0. It also account for the effect of teacher's experience and school's location on mean scaled math score by including the highest education level of each teacher and school's location type as predictors in the model.
 
 
 7.We now construct the models proposed in part 6 and perform hypothesis testing on the fitted model to answer question of interest.
@@ -269,16 +270,36 @@ Hypothesis for school ID: Null Hypothesis $H_{0}$: $\beta_{j}$ = 0 under all j. 
 
 Hypothesis for education level: Null Hypothesis $H_{0}$: $c_{k}$ = 0 under all k. Alternative Hypothesis $H_{a}$:There exist k such that $c_{k}$ =/= 0. We reject the null hypothesis if F* > F(0.99,4-1,$n_{T}$-ab). F* = MSC/MSE
 
+
 Since the value of F* for both class type and school ID are greater than their critical values, we may reject the null hypothesis that $\alpha_{i}$ = 0 under all i and $\beta_{j}$ = 0 under all j under a = 0.05. We may conclude that both class type and school ID has significant effect on the mean scaled math score of students under a teacher. However, F* value for teacher's edcation level is less than the critical value. Therefore we cannot reject the null hypothesis that $c_{k}$ = 0 under all k. We conclude that teacher's highest education level does not have a significant effect on mean scaled math score in a class.
 
 Now we will attempt to explore the secondary question of interest through Turkey HSD Test. We will use this test to evaluate the difference between mean scaled math scores under the three different class size. We will not include education level in this model for its effect is not significant. Based on the result given by TurkeyHSD test, at a = 0.05, the difference between mean scaled math score under regular and small class and difference between mean scaled math score under regular with aid and small class size are both significantly less than 0. These difference suggest that mean scaled math score under regular and regular with aid class size are significantly lower than mean scaled math score under small class size, making small class size the class size with highest scaled math score in first grade.
 
+An interesting finding occured when I attempted to add the location type of the school as a variable in the model. The model with location type of the school as an additional response variable has identical SSE as the model without it, suggesting that the main effect of school's location are 0. However, if school ID is not included as a response variable, the main effects of school location are significantly different from 0.
+
 ```{r, echo = FALSE}
-lm_model = lm(Mean ~ factor(g1classtype)+factor(g1thighdegree)+g1schid, data = teacher_summary)
+library(knitr)
+lm_model = lm(Mean ~ factor(g1classtype)+g1schid+factor(g1thighdegree), data = teacher_summary)
+lm_model2 = lm(Mean ~ factor(g1classtype)+factor(g1surban)+g1schid+factor(g1thighdegree), data = teacher_summary)
+lm_model3 = lm(Mean ~ factor(g1classtype)+factor(g1surban)+factor(g1thighdegree), data = teacher_summary)
+lm_model4 = lm(Mean ~ factor(g1classtype)+factor(g1thighdegree), data = teacher_summary)
 result = anova(lm_model)
+result2 = anova(lm_model2)
+result3 = anova(lm_model3)
+result4 = anova(lm_model4)
+SSLocation = result4$`Sum Sq`[3]-result3$`Sum Sq`[4]
+df = result4$Df[3] - result3$Df[4]
+MSL = SSLocation/df
+MSE = result3$`Sum Sq`[4]/result3$Df[4]
+print("The main effect of school's location when school ID is not a predictor is nonzero:")
+MSL/MSE > qf(0.95,df,result3$Df[4])
 #knitr::kable(head(result[, 1:7]), "simple")
-print("ANOVA summary for the full model:")
-result
+print("ANOVA summary for the full model in part 6:")
+result %>%
+  kable()
+print("ANOVA summary for the model with school's location as additional variable:")
+result2 %>%
+  kable()
 ```
 
 ```{r, echo = FALSE}
@@ -286,13 +307,14 @@ lm_model$coefficients[c(2,3)]
 ```
 
 ```{r, echo = FALSE}
-lm_model$coefficients[c(4,5,6)]
+tail(lm_model$coefficients,3)
 ```
 
 
 
+
 ```{r, echo = FALSE}
-no_class_type_model = lm(Mean ~ factor(g1thighdegree)+g1schid, data = teacher_summary)
+no_class_type_model = lm(Mean ~ g1schid+factor(g1thighdegree), data = teacher_summary)
 no_education_level_model = lm(Mean ~ factor(g1classtype)+g1schid, data = teacher_summary)
 no_school_model = lm(Mean ~ factor(g1classtype)+factor(g1thighdegree), data = teacher_summary)
 no_class_summary = anova(no_class_type_model)
@@ -324,6 +346,7 @@ FstarC > qf(0.95,dfC,result$Df[4])
 ```{r, echo = FALSE}
 teacher_summary$g1classtype = as.factor(teacher_summary$g1classtype)
 tukey_results = TukeyHSD(aov(Mean ~ g1classtype+g1schid, data=teacher_summary), which = "g1classtype")
+print("TukeyHSD test results:")
 knitr::kable(head(tukey_results$g1classtype[, 1:4]), "simple")
 #tukey_results$g1classtype
 #plot(print(tukey_results))
@@ -353,28 +376,26 @@ plot(lm_model,which = 2)
 ```
 
 
-
-
 ```{r, echo = FALSE}
 library(car)
 print("Levene Test results for class type:")
-leveneTest(Mean~factor(g1classtype),data=teacher_summary)
+kable(leveneTest(Mean~factor(g1classtype),data=teacher_summary))
 ```
  
 
 ```{r, echo = FALSE}
 print("Levene Test results for school ID type:")
-leveneTest(Mean~g1schid,data=teacher_summary)
+kable(leveneTest(Mean~g1schid,data=teacher_summary))
 ```
 
 
 ```{r, echo = FALSE}
 print("Levene Test results for teacher's highest education level type:")
-leveneTest(Mean~factor(g1thighdegree),data=teacher_summary)
+kable(leveneTest(Mean~factor(g1thighdegree),data=teacher_summary))
 ```
 
 Conclusion:
-The STAR project was an effective randomized experiment. However, it suffer from a lack of repeatebility and unreported values. Based on the model fitted in part 6, there is a significant difference in scaled math score in first grade across the different class sizes after difference in school and education level of the teacher is taken into account. The class size associated with highest scaled math score in first grade is small(13 to 17 students per teacher). Teacher's highest education level does not have a significant effect on mean scaled math score of a class in first grade. 
+The STAR project was an effective randomized experiment. However, it suffer from a lack of repeatebility and unreported values. The model based with mean scaled math score under each teacher as response and class size, school ID,and teacher's highest education level as predictor is a model that satisfy all model assumptions. Based on this model fitted in part 6, there is a significant difference in scaled math score in first grade across the different class sizes after difference in school and education level of the teacher is taken into account. The class size associated with highest scaled math score in first grade is small(13 to 17 students per teacher). Teacher's highest education level does not have a significant effect on mean scaled math score of a class in first grade.
 
 Office hour notes:
 Reformate the report, hide the code and raw output. Put codes together and puut written report into paragraphs. Have only written report. Change the size of the plot and have mutiple plot on same row, use kable function for tables and statistic summary. 
